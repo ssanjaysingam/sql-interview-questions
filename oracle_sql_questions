@@ -2,3 +2,51 @@
 select ids,val , sum(val) over(partition by ids order by ids rows between unbounded preceding and current row) as r_val from tables
 
 select ids, val, sum(val) over(partition by ids order by ids rows unbouned preceding) as r_val from tables
+
+
+>> UPDATE to reverse the values of gender in table
+update up_gender set gender = case when gender = 'M' THEN 'F' ELSE 'F' END
+
+>> Hierachy query
+
+select listagg(emp_id,'-->') from (
+select emp_id,mng_id from hierarchy_test
+start with emp_id=1
+CONNECT BY emp_id = PRIOR  mng_id)
+
+select ft.EMP_ID,ft.MNG_ID,( 
+select listagg(st.emp_id,'-->') from ( 
+select t.emp_id,t.mng_id from hierarchy_test t 
+start with t.emp_id=ft.emp_id 
+CONNECT BY t.emp_id = PRIOR  t.mng_id) st) as hie from hierarchy_test ft
+
+
+>> pivot table
+create table t_pi( o_year INTEGER,sports VARCHAR2(20),gender VARCHAR2(20),event VARCHAR2(20),medal VARCHAR2(20),noc VARCHAR2(20),p_name VARCHAR2(20))
+
+insert into t_pi values(2016,' Archery','M','Men''s Individual','Gold','KOR ','KU Bonchan');
+insert into t_pi values(2016,' Archery','M','Men''s Individual','Silver','FRA','VALLADONT Charles');
+insert into t_pi values(2016,' Archery','M','Men''s Individual','Bronze','USA','ELLISON Brady');
+insert into t_pi values(2016,' Archery','W','Women''s Individual','Gold','KOR ','CHANG Hyejin');
+insert into t_pi values(2016,' Archery','W','Women''s Individual','Silver','GER','UNRUH Lisa');
+insert into t_pi values(2016,' Archery','W','Women''s Individual','Bronze','KOR ','KI Bobae');
+
+
+select O_YEAR, SPORTS, GENDER, EVENT, NOC, P_NAME, MEDAL from t_upi
+unpivot( medals for medal in ("GOLD","SILVER","BRONZE"))
+where medals=1
+
+create table t_upi as 
+select * from t_pi 
+pivot(count(*) for medal in  ( 'Gold' gold, 'Silver' silver, 'Bronze' bronze ))
+order by noc
+
+select * from 
+(select O_YEAR, SPORTS, MEDAL, NOC from t_pi) pi
+pivot ( 
+  count(*) for medal in ( 'Gold' gold, 'Silver' silver, 'Bronze' bronze )
+)
+order by noc
+fetch first 3 rows only;
+
+O_YEAR, SPORTS, EVENT, MEDAL, NOC
